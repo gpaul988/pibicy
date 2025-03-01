@@ -17,8 +17,6 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
       const savedAnnotations = localStorage.getItem(`annotations-${fileName}`);
       if (savedAnnotations) {
         setAnnotations(JSON.parse(savedAnnotations));
-      } else {
-        setAnnotations([]);
       }
     }
   }, [fileName]);
@@ -31,6 +29,39 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
       transformer.getLayer().batchDraw();
     }
   }, [selectedIds]);
+
+  const handleExport = () => {
+    const json = JSON.stringify(annotations, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${fileName || "annotations"}.json`;
+    a.click();
+
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const importedData = JSON.parse(e.target.result);
+        if (Array.isArray(importedData)) {
+          setAnnotations(importedData);
+        } else {
+          alert("Invalid file format");
+        }
+      } catch (error) {
+        alert(`Error reading file: ${error.message}`);
+      }
+    };
+    reader.readAsText(file);
+  };
 
   const saveToHistory = () => {
     setHistory([...history, annotations]);
@@ -161,6 +192,11 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
         <button onClick={deleteAnnotation} className="p-2 bg-red-500 text-white rounded" disabled={selectedIds.length === 0}>
           Delete (Del)
         </button>
+         <button onClick={handleExport} className="p-2 bg-blue-500 text-white rounded">Export JSON</button>
+        <label className="p-2 bg-green-500 text-white rounded cursor-pointer">
+          Import JSON
+          <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+        </label>
       </div>
 
       <Stage ref={stageRef} width={width} height={height} className="border shadow-md">
