@@ -1,4 +1,4 @@
-import { Stage, Layer, Rect, Text } from "react-konva";
+import { Stage, Layer, Rect, Text, Transformer } from "react-konva";
 import { useState, useEffect, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -7,6 +7,7 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
   const [annotations, setAnnotations] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const stageRef = useRef(null);
+  const transformerRef = useRef(null);
 
   // Load saved annotations when file changes
   useEffect(() => {
@@ -19,6 +20,17 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
       }
     }
   }, [fileName]);
+
+  useEffect(() => {
+    const transformer = transformerRef.current;
+    if (transformer && selectedId) {
+      const selectedNode = stageRef.current.findOne(`#${selectedId}`);
+      if (selectedNode) {
+        transformer.nodes([selectedNode]);
+        transformer.getLayer().batchDraw();
+      }
+    }
+  }, [selectedId]);
 
   const addText = () => {
     setAnnotations([...annotations, { id: Date.now(), type: "text", text: "New Text", x: 50, y: 50 }]);
@@ -46,6 +58,17 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
       setAnnotations(annotations.filter((anno) => anno.id !== selectedId));
       setSelectedId(null);
     }
+  };
+
+  const handleTransformEnd = (e, id) => {
+    const updatedAnnotations = annotations.map((anno) => {
+      if (anno.id === id) {
+        const node = e.target;
+        return { ...anno, x: node.x(), y: node.y(), width: node.width(), height: node.height() };
+      }
+      return anno;
+    });
+    setAnnotations(updatedAnnotations);
   };
 
   // Export as Image
@@ -91,20 +114,21 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
 
       <Stage ref={stageRef} width={width} height={height} className="border shadow-md">
         <Layer>
-          {annotations.map((anno) =>
-            anno.type === "text" ? (
-              <Text
-                  key={anno.id}
+          {annotations.map((anno) => (
+            <React.Fragment key={anno.id}>
+              {anno.type === "text" ? (
+                <Text
+                  id={anno.id}
                   text={anno.text}
                   x={anno.x}
                   y={anno.y}
                   fontSize={16}
                   draggable
                   onClick={() => setSelectedId(anno.id)}
-              />
-            ) : (
-              <Rect
-                  key={anno.id}
+                />
+              ) : (
+                <Rect
+                  id={anno.id}
                   x={anno.x}
                   y={anno.y}
                   width={anno.width}
@@ -114,9 +138,13 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
                   stroke={selectedId === anno.id ? "red" : "transparent"}
                   strokeWidth={2}
                   onClick={() => setSelectedId(anno.id)}
-              />
-            )
-          )}
+                  onTransformEnd={(e) => handleTransformEnd(e, anno.id)}
+                />
+              )}
+            </React.Fragment>
+          ))}
+
+          <Transformer ref={transformerRef} />
         </Layer>
       </Stage>
     </div>
