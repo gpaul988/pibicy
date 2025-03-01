@@ -8,6 +8,7 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
   const [history, setHistory] = useState([]);
   const [redoStack, setRedoStack] = useState([]);
   const [selectedIds, setSelectedIds] = useState(null);
+  const [settings, setSettings] = useState({ color: "#000000", fontSize: 16, strokeWidth: 2 });
   const stageRef = useRef(null);
   const transformerRef = useRef(null);
 
@@ -23,10 +24,12 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
 
   useEffect(() => {
     const transformer = transformerRef.current;
-    if (transformer) {
-      const selectedNodes = selectedIds.map((id) => stageRef.current.findOne(`#${id}`)).filter(Boolean);
-      transformer.nodes(selectedNodes);
-      transformer.getLayer().batchDraw();
+    if (transformer && selectedIds) {
+      const selectedNode = stageRef.current.findOne(`#${selectedIds}`);
+      if (selectedNode) {
+        transformer.nodes([selectedNode]);
+        transformer.getLayer().batchDraw();
+      }
     }
   }, [selectedIds]);
 
@@ -111,6 +114,10 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
       setAnnotations(annotations.filter((anno) => !selectedIds.includes(anno.id)));
       setSelectedIds(null);
     }
+  };
+
+  const updateAnnotation = (id, changes) => {
+    setAnnotations(annotations.map((anno) => (anno.id === id ? { ...anno, ...changes } : anno)));
   };
 
   const handleTransformEnd = (e, id) => {
@@ -199,6 +206,21 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
         </label>
       </div>
 
+       <div className="flex gap-2 mb-4">
+        <label>
+          Color:
+          <input type="color" value={settings.color} onChange={(e) => setSettings({ ...settings, color: e.target.value })} />
+        </label>
+        <label>
+          Font Size:
+          <input type="number" min="10" max="50" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: parseInt(e.target.value) })} />
+        </label>
+        <label>
+          Stroke Width:
+          <input type="number" min="1" max="10" value={settings.strokeWidth} onChange={(e) => setSettings({ ...settings, strokeWidth: parseInt(e.target.value) })} />
+        </label>
+      </div>
+
       <Stage ref={stageRef} width={width} height={height} className="border shadow-md">
         <Layer>
           {annotations.map((anno) => (
@@ -213,6 +235,8 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
                   draggable
                   fill={selectedIds.includes(anno.id) ? "red" : "black"}
                   onClick={(e) => handleClick(anno.id, e)}
+                  onDblClick={() => updateAnnotation(anno.id, { fontSize: settings.fontSize, color: settings.color })}
+
                 />
               ) : (
                 <Rect
@@ -224,8 +248,9 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
                   fill={anno.fill}
                   draggable
                   stroke={selectedIds.includes(anno.id) ? "red" : "transparent"}
-                  strokeWidth={selectedIds.includes(anno.id) ? 2 : 0}
+                  strokeWidth={anno.strokeWidth}
                   onClick={(e) => handleClick(anno.id, e)}
+                  onDblClick={() => updateAnnotation(anno.id, { strokeWidth: settings.strokeWidth, fill: settings.color })}
                   onTransformEnd={(e) => handleTransformEnd(e, anno.id)}
                 />
               )}
