@@ -120,6 +120,10 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
     setAnnotations(annotations.map((anno) => (anno.id === id ? { ...anno, ...changes } : anno)));
   };
 
+  const toggleLock = () => {
+    setAnnotations(annotations.map((anno) => (anno.id === selectedIds ? { ...anno, locked: !anno.locked } : anno)));
+  };
+
   const handleTransformEnd = (e, id) => {
     const updatedAnnotations = annotations.map((anno) => {
       if (anno.id === id) {
@@ -204,6 +208,9 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
           Import JSON
           <input type="file" accept=".json" onChange={handleImport} className="hidden" />
         </label>
+        <button onClick={toggleLock} className="p-2 bg-gray-500 text-white rounded" disabled={!selectedIds}>
+          {selectedIds && annotations.find((a) => a.id === selectedIds)?.locked ? "Unlock" : "Lock"}
+        </button>
       </div>
 
        <div className="flex gap-2 mb-4">
@@ -231,8 +238,8 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
                   text={anno.text}
                   x={anno.x}
                   y={anno.y}
-                  fontSize={16}
-                  draggable
+                  fontSize={anno.fontSize}
+                  draggable={!anno.locked}
                   fill={selectedIds.includes(anno.id) ? "red" : "black"}
                   onClick={(e) => handleClick(anno.id, e)}
                   onDblClick={() => updateAnnotation(anno.id, { fontSize: settings.fontSize, color: settings.color })}
@@ -246,7 +253,7 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
                   width={anno.width}
                   height={anno.height}
                   fill={anno.fill}
-                  draggable
+                  draggable={!anno.locked}
                   stroke={selectedIds.includes(anno.id) ? "red" : "transparent"}
                   strokeWidth={anno.strokeWidth}
                   onClick={(e) => handleClick(anno.id, e)}
