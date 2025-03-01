@@ -56,19 +56,19 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
   };
 
   const addText = () => {
-    setAnnotations([...annotations, { id: Date.now(), type: "text", text: "New Text", x: 50, y: 50 }]);
+    setAnnotations([...annotations, { id: `anno-${Date.now()}`, type: "text", text: "New Text", x: 50, y: 50 }]);
   };
 
   const addRectangle = () => {
-    setAnnotations([...annotations, { id: Date.now(), type: "rect", x: 100, y: 100, width: 100, height: 50, fill: "rgba(0,0,255,0.3)" }]);
+    setAnnotations([...annotations, { id: `anno-${Date.now()}`, type: "rect", x: 100, y: 100, width: 100, height: 50, fill: "rgba(0,0,255,0.3)" }]);
   };
 
   const addTransparentHighlight = () => {
-    setAnnotations([...annotations, { id: Date.now(), type: "highlight", x: 50, y: 50, width: 150, height: 50, fill: "rgba(255, 255, 0, 0.4)" }]);
+    setAnnotations([...annotations, { id: `anno-${Date.now()}`, type: "highlight", x: 50, y: 50, width: 150, height: 50, fill: "rgba(255, 255, 0, 0.4)" }]);
   };
 
   const addOpaqueHighlight = () => {
-    setAnnotations([...annotations, { id: Date.now(), type: "opaque", x: 50, y: 50, width: 150, height: 50, fill: "rgba(0, 0, 0, 1)" }]);
+    setAnnotations([...annotations, { id: `anno-${Date.now()}`, type: "opaque", x: 50, y: 50, width: 150, height: 50, fill: "rgba(0, 0, 0, 1)" }]);
   };
 
   const saveAnnotations = () => {
@@ -121,6 +121,10 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
     }
   };
 
+  const handleClick = (id) => {
+    setSelectedId(id);
+  }
+
   return (
     <div className="mt-4">
       <div className="flex gap-2 mb-2">
@@ -154,7 +158,8 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
                   y={anno.y}
                   fontSize={16}
                   draggable
-                  onClick={() => setSelectedId(anno.id)}
+                  fill={selectedId === anno.id ? "red" : "black"}
+                  onClick={() => handleClick(anno.id)}
                 />
               ) : (
                 <Rect
@@ -166,8 +171,8 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
                   fill={anno.fill}
                   draggable
                   stroke={selectedId === anno.id ? "red" : "transparent"}
-                  strokeWidth={2}
-                  onClick={() => setSelectedId(anno.id)}
+                  strokeWidth={selectedId === anno.id ? 2 : 0}
+                  onClick={() => handleClick(anno.id)}
                   onTransformEnd={(e) => handleTransformEnd(e, anno.id)}
                 />
               )}
