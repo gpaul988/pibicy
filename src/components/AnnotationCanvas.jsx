@@ -5,6 +5,8 @@ import jsPDF from "jspdf";
 
 const AnnotationCanvas = ({ width, height, fileName }) => {
   const [annotations, setAnnotations] = useState([]);
+  const [history, setHistory] = useState([]);
+  const [redoStack, setRedoStack] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const stageRef = useRef(null);
   const transformerRef = useRef(null);
@@ -32,6 +34,27 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
     }
   }, [selectedId]);
 
+  const saveToHistory = () => {
+    setHistory([...history, annotations]);
+    setRedoStack([]); // Clear redo stack when making a new change
+  };
+
+  const undo = () => {
+    if (history.length > 0) {
+      setRedoStack([annotations, ...redoStack]);
+      setAnnotations(history[history.length - 1]);
+      setHistory(history.slice(0, -1));
+    }
+  };
+
+  const redo = () => {
+    if (redoStack.length > 0) {
+      setHistory([...history, annotations]);
+      setAnnotations(redoStack[0]);
+      setRedoStack(redoStack.slice(1));
+    }
+  };
+
   const addText = () => {
     setAnnotations([...annotations, { id: Date.now(), type: "text", text: "New Text", x: 50, y: 50 }]);
   };
@@ -55,6 +78,7 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
 
   const deleteAnnotation = () => {
     if (selectedId) {
+      saveToHistory();
       setAnnotations(annotations.filter((anno) => anno.id !== selectedId));
       setSelectedId(null);
     }
@@ -109,6 +133,12 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
         <button onClick={exportAsPDF} className="p-2 bg-orange-500 text-white rounded">Export as PDF</button>
         <button onClick={deleteAnnotation} className="p-2 bg-red-500 text-white rounded" disabled={!selectedId}>
           Delete Selected
+        </button>
+        <button onClick={undo} className="p-2 bg-yellow-500 text-white rounded" disabled={history.length === 0}>
+          Undo
+        </button>
+        <button onClick={redo} className="p-2 bg-purple-500 text-white rounded" disabled={redoStack.length === 0}>
+          Redo
         </button>
       </div>
 
