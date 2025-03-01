@@ -1,5 +1,5 @@
 import { Stage, Layer, Rect, Text, Transformer } from "react-konva";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
@@ -75,9 +75,9 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
   };
 
   const deleteAnnotation = () => {
-    if (selectedIds) {
+    if (selectedIds.length > 0) {
       saveToHistory();
-      setAnnotations(annotations.filter((anno) => anno.id !== selectedIds));
+      setAnnotations(annotations.filter((anno) => !selectedIds.includes(anno.id)));
       setSelectedIds(null);
     }
   };
@@ -127,6 +127,21 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
     }
   };
 
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === "Delete") {
+      deleteAnnotation();
+    } else if ((e.ctrlKey || e.metaKey) && e.key === "z") {
+      e.shiftKey ? redo() : undo();
+    } else if ((e.ctrlKey || e.metaKey) && e.key === "y") {
+      redo();
+    }
+  }, [annotations, history, redoStack, selectedIds, deleteAnnotation, undo, redo]);
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
+
   return (
     <div className="mt-4">
       <div className="flex gap-2 mb-2">
@@ -137,14 +152,14 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
         <button onClick={saveAnnotations} className="p-2 bg-purple-500 text-white rounded">Save Annotations</button>
         <button onClick={exportAsImage} className="p-2 bg-red-500 text-white rounded">Export as Image</button>
         <button onClick={exportAsPDF} className="p-2 bg-orange-500 text-white rounded">Export as PDF</button>
-        <button onClick={deleteAnnotation} className="p-2 bg-red-500 text-white rounded" disabled={!selectedIds}>
-          Delete Selected
-        </button>
         <button onClick={undo} className="p-2 bg-yellow-500 text-white rounded" disabled={history.length === 0}>
-          Undo
+          Undo (Ctrl+Z)
         </button>
         <button onClick={redo} className="p-2 bg-purple-500 text-white rounded" disabled={redoStack.length === 0}>
-          Redo
+          Redo (Ctrl+Y)
+        </button>
+        <button onClick={deleteAnnotation} className="p-2 bg-red-500 text-white rounded" disabled={selectedIds.length === 0}>
+          Delete (Del)
         </button>
       </div>
 
