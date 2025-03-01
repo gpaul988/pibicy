@@ -1,6 +1,7 @@
 import { Stage, Layer, Rect, Text } from "react-konva";
 import { useState, useEffect, useRef } from "react";
 import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 const AnnotationCanvas = ({ width, height, fileName }) => {
   const [annotations, setAnnotations] = useState([]);
@@ -50,6 +51,21 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
     }
   };
 
+  // Export as PDF
+  const exportAsPDF = async () => {
+    if (stageRef.current) {
+      const canvas = await html2canvas(stageRef.current.container());
+      const imgData = canvas.toDataURL("image/png");
+
+      const pdf = new jsPDF();
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`${fileName}-annotated.pdf`);
+    }
+  };
+
   return (
     <div className="mt-4">
       <div className="flex gap-2 mb-2">
@@ -59,6 +75,7 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
         <button onClick={addOpaqueHighlight} className="p-2 bg-gray-700 text-white rounded">Add Opaque Mask</button>
         <button onClick={saveAnnotations} className="p-2 bg-purple-500 text-white rounded">Save Annotations</button>
         <button onClick={exportAsImage} className="p-2 bg-red-500 text-white rounded">Export as Image</button>
+        <button onClick={exportAsPDF} className="p-2 bg-orange-500 text-white rounded">Export as PDF</button>
       </div>
 
       <Stage ref={stageRef} width={width} height={height} className="border shadow-md">
