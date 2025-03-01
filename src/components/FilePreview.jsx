@@ -24,7 +24,7 @@ const FilePreview = ({ file }) => {
       {fileType.startsWith("image/") && (
         <div className="relative">
           <img src={fileUrl} alt="Preview" className="max-w-full h-auto rounded" />
-          <AnnotationCanvas width={600} height={400} />
+          <AnnotationCanvas width={600} height={400} fileName={file.name} />
         </div>
       )}
 
@@ -33,7 +33,7 @@ const FilePreview = ({ file }) => {
           <Worker workerUrl="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js">
             <Viewer fileUrl={fileUrl} />
           </Worker>
-          <AnnotationCanvas width={600} height={400} />
+          <AnnotationCanvas width={600} height={400} fileName={file.name} />
         </div>
       )}
 
