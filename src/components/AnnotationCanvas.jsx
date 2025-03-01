@@ -7,7 +7,7 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
   const [annotations, setAnnotations] = useState([]);
   const [history, setHistory] = useState([]);
   const [redoStack, setRedoStack] = useState([]);
-  const [selectedId, setSelectedId] = useState(null);
+  const [selectedIds, setSelectedIds] = useState(null);
   const stageRef = useRef(null);
   const transformerRef = useRef(null);
 
@@ -25,14 +25,12 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
 
   useEffect(() => {
     const transformer = transformerRef.current;
-    if (transformer && selectedId) {
-      const selectedNode = stageRef.current.findOne(`#${selectedId}`);
-      if (selectedNode) {
-        transformer.nodes([selectedNode]);
-        transformer.getLayer().batchDraw();
-      }
+    if (transformer) {
+      const selectedNodes = selectedIds.map((id) => stageRef.current.findOne(`#${id}`)).filter(Boolean);
+      transformer.nodes(selectedNodes);
+      transformer.getLayer().batchDraw();
     }
-  }, [selectedId]);
+  }, [selectedIds]);
 
   const saveToHistory = () => {
     setHistory([...history, annotations]);
@@ -77,10 +75,10 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
   };
 
   const deleteAnnotation = () => {
-    if (selectedId) {
+    if (selectedIds) {
       saveToHistory();
-      setAnnotations(annotations.filter((anno) => anno.id !== selectedId));
-      setSelectedId(null);
+      setAnnotations(annotations.filter((anno) => anno.id !== selectedIds));
+      setSelectedIds(null);
     }
   };
 
@@ -121,9 +119,13 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
     }
   };
 
-  const handleClick = (id) => {
-    setSelectedId(id);
-  }
+  const handleClick = (id, e) => {
+    if (e.shiftKey) {
+      setSelectedIds((prev) => (prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id]));
+    } else {
+      setSelectedIds([id]);
+    }
+  };
 
   return (
     <div className="mt-4">
@@ -135,7 +137,7 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
         <button onClick={saveAnnotations} className="p-2 bg-purple-500 text-white rounded">Save Annotations</button>
         <button onClick={exportAsImage} className="p-2 bg-red-500 text-white rounded">Export as Image</button>
         <button onClick={exportAsPDF} className="p-2 bg-orange-500 text-white rounded">Export as PDF</button>
-        <button onClick={deleteAnnotation} className="p-2 bg-red-500 text-white rounded" disabled={!selectedId}>
+        <button onClick={deleteAnnotation} className="p-2 bg-red-500 text-white rounded" disabled={!selectedIds}>
           Delete Selected
         </button>
         <button onClick={undo} className="p-2 bg-yellow-500 text-white rounded" disabled={history.length === 0}>
@@ -158,8 +160,8 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
                   y={anno.y}
                   fontSize={16}
                   draggable
-                  fill={selectedId === anno.id ? "red" : "black"}
-                  onClick={() => handleClick(anno.id)}
+                  fill={selectedIds.includes(anno.id) ? "red" : "black"}
+                  onClick={(e) => handleClick(anno.id, e)}
                 />
               ) : (
                 <Rect
@@ -170,9 +172,9 @@ const AnnotationCanvas = ({ width, height, fileName }) => {
                   height={anno.height}
                   fill={anno.fill}
                   draggable
-                  stroke={selectedId === anno.id ? "red" : "transparent"}
-                  strokeWidth={selectedId === anno.id ? 2 : 0}
-                  onClick={() => handleClick(anno.id)}
+                  stroke={selectedIds.includes(anno.id) ? "red" : "transparent"}
+                  strokeWidth={selectedIds.includes(anno.id) ? 2 : 0}
+                  onClick={(e) => handleClick(anno.id, e)}
                   onTransformEnd={(e) => handleTransformEnd(e, anno.id)}
                 />
               )}
